@@ -1,10 +1,15 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
-import serial
 import time
 import pandas as pd
 import os
+
+# ✅ SAFE IMPORT FOR SERIAL (FIXES ERROR)
+try:
+    import serial
+except:
+    serial = None
 
 # -----------------------------
 # 🎨 PAGE CONFIG
@@ -36,7 +41,7 @@ st.markdown("""
 # -----------------------------
 if os.path.exists("cover.jpg"):
     cover = Image.open("cover.jpg")
-    st.image(cover, width="stretch")   # ✅ FIXED (no warning)
+    st.image(cover, width="stretch")
 else:
     st.warning("⚠️ Add cover.jpg in project folder")
 
@@ -46,16 +51,20 @@ st.markdown("<p class='subtext'>Group No: 07 | AI & Data Science Project</p>", u
 st.divider()
 
 # -----------------------------
-# 🔌 ARDUINO CONNECTION
+# 🔌 ARDUINO CONNECTION (SAFE)
 # -----------------------------
 if "arduino" not in st.session_state:
-    try:
-        st.session_state.arduino = serial.Serial('COM7', 9600)
-        time.sleep(2)
-        st.success("✅ Arduino Connected")
-    except Exception as e:
+    if serial is not None:
+        try:
+            st.session_state.arduino = serial.Serial('COM7', 9600)
+            time.sleep(2)
+            st.success("✅ Arduino Connected")
+        except:
+            st.session_state.arduino = None
+            st.warning("⚠️ Arduino not available (Cloud Mode)")
+    else:
         st.session_state.arduino = None
-        st.error(f"❌ Arduino Error: {e}")
+        st.warning("⚠️ PySerial not available (Cloud Mode)")
 
 arduino = st.session_state.arduino
 
@@ -79,7 +88,7 @@ with col_cam:
 
 with col_table:
     st.subheader("📋 Waste Data Table")
-    st.dataframe(st.session_state.data, width="stretch")  # ✅ FIXED
+    st.dataframe(st.session_state.data, width="stretch")
 
 # -----------------------------
 # 🤖 CUSTOM SEQUENCE DETECTION
@@ -125,7 +134,7 @@ if img_file is not None:
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.image(image, caption="Captured Image", width="stretch")  # ✅ FIXED
+        st.image(image, caption="Captured Image", width="stretch")
 
     with col2:
         obj = detect_object()
@@ -140,19 +149,22 @@ if img_file is not None:
         elif category == "Sharp":
             st.error(f"🔴 {category} Waste")
 
-        # Arduino Control
+        # Arduino Control (SAFE)
         if arduino:
-            if category == "General":
-                arduino.write(b'G')
-                st.write("🟢 GENERAL bin opened")
-            elif category == "Infectious":
-                arduino.write(b'I')
-                st.write("🟡 INFECTIOUS bin opened")
-            elif category == "Sharp":
-                arduino.write(b'S')
-                st.write("🔴 SHARP bin opened")
+            try:
+                if category == "General":
+                    arduino.write(b'G')
+                    st.write("🟢 GENERAL bin opened")
+                elif category == "Infectious":
+                    arduino.write(b'I')
+                    st.write("🟡 INFECTIOUS bin opened")
+                elif category == "Sharp":
+                    arduino.write(b'S')
+                    st.write("🔴 SHARP bin opened")
+            except:
+                st.warning("⚠️ Arduino write failed")
         else:
-            st.warning("⚠️ Arduino not connected")
+            st.info("💡 Running in cloud mode (no hardware control)")
 
         # Update Data
         st.session_state.data.loc[

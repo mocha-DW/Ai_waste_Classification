@@ -188,11 +188,6 @@ st.bar_chart(st.session_state.data.set_index("Category"))
 # -----------------------------
 # 👨‍💻 TEAM
 # -----------------------------
-st.markdown("### 👨‍💻 Team Members")
+st.markdown("### 👨‍💻 Copy right @- Digambar Waghmare")
 st.write("""
-- Digambar Waghmare
-- Samruddhi Patil
-- Suryani Landge
-- Samruddhi Lahoti
-- Pratik Idhole
 """)
